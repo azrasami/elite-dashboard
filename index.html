@@ -64,7 +64,6 @@
       font-size: 18px;
       margin-top: 20px;
     }
-
   </style>
 </head>
 
@@ -81,7 +80,7 @@
 <script>
   // 1) إعداد Supabase
   const supabaseUrl = "https://yhpaaworkhotjiodtkxt.supabase.co";
-  const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlocGFhd29ya2hvdGppb2R0a3h0Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2MzI3OTk3MCwiZXhwIjoyMDc4ODU1OTcwfQ.taZ2ATYWoMLl8K6l88tzbiTXcHvFhfcrWgSsUT_b7gU";
+  const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlocGFhd29ya2hvdGppb2R0a3h0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMyNzk5NzAsImV4cCI6MjA3ODg1NTk3MH0.jJKB7g1SxFrROHnwj6a9e--4jJ07D23iNHix4NcBjJA"; // ⚠ استخدمي الـ anon key فقط
   const supabase = supabase.createClient(supabaseUrl, supabaseKey);
 
   // 2) الحصول على secret_link من رابط الصفحة
@@ -90,45 +89,43 @@
 
   const dashboardDiv = document.getElementById("dashboard");
 
-  // 3) في حال عدم وجود secret
   if (!secretLink) {
-    dashboardDiv.innerHTML = "<p class='error'>الرابط غير صالح. لا يمكن عرض الداشبورد.</p>";
+    dashboardDiv.innerHTML = "<p class='error'>الرابط غير صالح.</p>";
   } else {
-    // 4) جلب بيانات المستخدم من Supabase
-    async function loadUser() {
-      const { data, error } = await supabase
-        .from("users")
-        .select("*")
-        .eq("secret_link", secretLink)
-        .single();
+    loadUser();
+  }
 
-      if (error || !data) {
-        dashboardDiv.innerHTML = "<p class='error'>لم يتم العثور على بيانات المستخدم.</p>";
-        return;
-      }
+  // 3) جلب بيانات المستخدم حسب secret
+  async function loadUser() {
+    const { data, error } = await supabase
+      .from("users")
+      .select("*")
+      .eq("secret_link", secretLink)
+      .single();
 
-      // 5) عرض البيانات
-      dashboardDiv.innerHTML = `
-        <div class="title">مرحبًا ${data.name || "بك"}!</div>
-
-        <div class="info-box">
-          <p><strong>البريد:</strong> ${data.email || "غير متوفر"}</p>
-          <p><strong>الرابط السري:</strong> ${data.secret_link}</p>
-        </div>
-
-        <div class="info-box">
-          <p>سيتم قريبًا عرض:</p>
-          <p>✓ الحملات الإعلانية</p>
-          <p>✓ الإعلانات الرابحة والخاسرة</p>
-          <p>✓ بيانات الأداء اليومية</p>
-        </div>
-      `;
+    if (error || !data) {
+      dashboardDiv.innerHTML = "<p class='error'>لا توجد بيانات لهذا الرابط.</p>";
+      return;
     }
 
-    loadUser();
+    // 4) عرض البيانات
+    dashboardDiv.innerHTML = `
+      <div class="title">مرحبًا ${data.name || "بك"}!</div>
+
+      <div class="info-box">
+        <p><strong>البريد:</strong> ${data.email}</p>
+        <p><strong>الرابط السري:</strong> ${data.secret_link}</p>
+      </div>
+
+      <div class="info-box">
+        <p>سيتم قريبًا عرض:</p>
+        <p>✓ الحملات الإعلانية</p>
+        <p>✓ الإعلانات الرابحة والخاسرة</p>
+        <p>✓ بيانات الأداء اليومية</p>
+      </div>
+    `;
   }
 </script>
 
 </body>
 </html>
-
