@@ -65,8 +65,8 @@
       margin-top: 20px;
     }
   </style>
-</head>
 
+</head>
 <body>
 
 <header>
@@ -78,52 +78,50 @@
 </div>
 
 <script>
-  // 1) إعداد Supabase
   const supabaseUrl = "https://yhpaaworkhotjiodtkxt.supabase.co";
-  const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlocGFhd29ya2hvdGppb2R0a3h0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMyNzk5NzAsImV4cCI6MjA3ODg1NTk3MH0.jJKB7g1SxFrROHnwj6a9e--4jJ07D23iNHix4NcBjJA"; // ⚠ استخدمي الـ anon key فقط
+  const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlocGFhd29ya2hvdGppb2R0a3h0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMyNzk5NzAsImV4cCI6MjA3ODg1NTk3MH0.jJKB7g1SxFrROHnwj6a9e--4jJ07D23iNHix4NcBjJA";
+
   const supabase = supabase.createClient(supabaseUrl, supabaseKey);
 
-  // 2) الحصول على secret_link من رابط الصفحة
   const urlParams = new URLSearchParams(window.location.search);
   const secretLink = urlParams.get("secret");
 
   const dashboardDiv = document.getElementById("dashboard");
 
   if (!secretLink) {
-    dashboardDiv.innerHTML = "<p class='error'>الرابط غير صالح.</p>";
+    dashboardDiv.innerHTML = "<p class='error'>الرابط غير صالح. لا يمكن عرض الداشبورد.</p>";
   } else {
-    loadUser();
-  }
 
-  // 3) جلب بيانات المستخدم حسب secret
-  async function loadUser() {
-    const { data, error } = await supabase
-      .from("users")
-      .select("*")
-      .eq("secret_link", secretLink)
-      .single();
+    async function loadUser() {
+      const { data, error } = await supabase
+        .from("users")
+        .select("*")
+        .eq("secret_link", secretLink)
+        .single();
 
-    if (error || !data) {
-      dashboardDiv.innerHTML = "<p class='error'>لا توجد بيانات لهذا الرابط.</p>";
-      return;
+      if (error || !data) {
+        dashboardDiv.innerHTML = "<p class='error'>لم يتم العثور على بيانات المستخدم.</p>";
+        return;
+      }
+
+      dashboardDiv.innerHTML = `
+        <div class="title">مرحبًا ${data.name || "بك"}!</div>
+
+        <div class="info-box">
+          <p><strong>البريد:</strong> ${data.email || "غير متوفر"}</p>
+          <p><strong>الرابط السري:</strong> ${data.secret_link}</p>
+        </div>
+
+        <div class="info-box">
+          <p>سيتم قريبًا عرض:</p>
+          <p>✓ الحملات الإعلانية</p>
+          <p>✓ الإعلانات الرابحة والخاسرة</p>
+          <p>✓ بيانات الأداء اليومية</p>
+        </div>
+      `;
     }
 
-    // 4) عرض البيانات
-    dashboardDiv.innerHTML = `
-      <div class="title">مرحبًا ${data.name || "بك"}!</div>
-
-      <div class="info-box">
-        <p><strong>البريد:</strong> ${data.email}</p>
-        <p><strong>الرابط السري:</strong> ${data.secret_link}</p>
-      </div>
-
-      <div class="info-box">
-        <p>سيتم قريبًا عرض:</p>
-        <p>✓ الحملات الإعلانية</p>
-        <p>✓ الإعلانات الرابحة والخاسرة</p>
-        <p>✓ بيانات الأداء اليومية</p>
-      </div>
-    `;
+    loadUser();
   }
 </script>
 
