@@ -11,7 +11,6 @@
       font-family: 'Tahoma', sans-serif;
       background: #f5f7fb;
     }
-
     header {
       background: #111827;
       padding: 20px;
@@ -20,7 +19,6 @@
       font-size: 24px;
       font-weight: bold;
     }
-
     .container {
       max-width: 700px;
       margin: 40px auto;
@@ -29,14 +27,12 @@
       border-radius: 12px;
       box-shadow: 0 6px 20px rgba(0,0,0,0.08);
     }
-
     .title {
       font-size: 22px;
       font-weight: bold;
       margin-bottom: 15px;
       color: #111827;
     }
-
     .info-box {
       background: #f9fafb;
       padding: 15px 20px;
@@ -44,20 +40,17 @@
       margin-bottom: 20px;
       border: 1px solid #e5e7eb;
     }
-
     .info-box p {
       margin: 5px 0;
       font-size: 16px;
       color: #374151;
     }
-
     .loading {
       text-align: center;
       font-size: 18px;
       padding: 40px 0;
       color: #6b7280;
     }
-
     .error {
       color: #b91c1c;
       text-align: center;
@@ -65,8 +58,8 @@
       margin-top: 20px;
     }
   </style>
-
 </head>
+
 <body>
 
 <header>
@@ -78,11 +71,15 @@
 </div>
 
 <script>
+  // 1) إعداد Supabase
   const supabaseUrl = "https://yhpaaworkhotjiodtkxt.supabase.co";
-  const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlocGFhd29ya2hvdGppb2R0a3h0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMyNzk5NzAsImV4cCI6MjA3ODg1NTk3MH0.jJKB7g1SxFrROHnwj6a9e--4jJ07D23iNHix4NcBjJA";
+
+  // ❗ استخدمي المفتاح الجديد publishable فقط:
+  const supabaseKey = "sb_publishable_zEjtVqCNaOBQJFCHBsubjQ_ZjXgrGpp";
 
   const supabase = supabase.createClient(supabaseUrl, supabaseKey);
 
+  // 2) الحصول على secret_link من رابط الصفحة
   const urlParams = new URLSearchParams(window.location.search);
   const secretLink = urlParams.get("secret");
 
@@ -91,12 +88,13 @@
   if (!secretLink) {
     dashboardDiv.innerHTML = "<p class='error'>الرابط غير صالح. لا يمكن عرض الداشبورد.</p>";
   } else {
-
     async function loadUser() {
+
+      // تم إرسال secret كـ header تلقائيًا مع supabase-js
       const { data, error } = await supabase
         .from("users")
         .select("*")
-        .eq("secret_link", secretLink)
+        .eq("secret_link", secretLink) // سيُسمح فقط إذا تطابق RLS
         .single();
 
       if (error || !data) {
