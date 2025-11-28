@@ -71,28 +71,34 @@
 </div>
 
 <script>
-  // 1) إعداد Supabase
+  // إعداد Supabase
   const supabaseUrl = "https://yhpaaworkhotjiodtkxt.supabase.co";
   const supabaseKey = "sb_publishable_zEjtVqCNaOBQJFCHBsubjQ_ZjXgrGpp";
 
-  // ❗ الحل: لا نستخدم اسم supabase للمتغير
+  // ملاحظة: لا نستخدم اسم supabase كي لا نتعارض مع المكتبة
   const db = supabase.createClient(supabaseUrl, supabaseKey);
 
-  // 2) الحصول على secret_link من رابط الصفحة
+  // جلب secret من رابط الصفحة
   const urlParams = new URLSearchParams(window.location.search);
-  const secretLink = urlParams.get("secret");
+  const secretFromUrl = urlParams.get("secret");
 
   const dashboardDiv = document.getElementById("dashboard");
 
-  if (!secretLink) {
+  if (!secretFromUrl) {
     dashboardDiv.innerHTML = "<p class='error'>الرابط غير صالح. لا يمكن عرض الداشبورد.</p>";
   } else {
+
+    // ✨ هنا السحر الحقيقي: لو المستخدم كتب secret بدون link- نضيفه تلقائياً
+    const realSecret = secretFromUrl.startsWith("link-")
+      ? secretFromUrl
+      : "link-" + secretFromUrl;
+
     async function loadUser() {
 
       const { data, error } = await db
         .from("users")
         .select("*")
-        .eq("secret_link", secretLink)
+        .eq("secret_link", realSecret)
         .maybeSingle();
 
       if (error || !data) {
@@ -105,7 +111,7 @@
         <div class="title">مرحبًا ${data.name || "بك"}!</div>
 
         <div class="info-box">
-          <p><strong>البريد:</strong> ${data.email || "غير متوفر"}</p>
+          <p><strong>البريد:</strong> ${data.email}</p>
           <p><strong>الرابط السري:</strong> ${data.secret_link}</p>
         </div>
 
