@@ -56,6 +56,8 @@
       text-align: center;
       font-size: 18px;
       margin-top: 20px;
+      white-space: pre-wrap;
+      direction: ltr;
     }
   </style>
 </head>
@@ -74,7 +76,7 @@
   // 1) إعداد Supabase
   const supabaseUrl = "https://yhpaaworkhotjiodtkxt.supabase.co";
 
-  // ❗ استخدمي المفتاح الجديد publishable فقط:
+  // المفتاح الجديد "Publishable" (انسخيه من صفحة API Keys إذا غيرتيه لاحقاً)
   const supabaseKey = "sb_publishable_zEjtVqCNaOBQJFCHBsubjQ_ZjXgrGpp";
 
   const supabase = supabase.createClient(supabaseUrl, supabaseKey);
@@ -86,37 +88,60 @@
   const dashboardDiv = document.getElementById("dashboard");
 
   if (!secretLink) {
-    dashboardDiv.innerHTML = "<p class='error'>الرابط غير صالح. لا يمكن عرض الداشبورد.</p>";
+    dashboardDiv.innerHTML = "<p class='error' style='direction:rtl'>الرابط غير صالح. لا يمكن عرض الداشبورد (لا يوجد secret في الرابط).</p>";
   } else {
     async function loadUser() {
+      try {
+        console.log("Secret from URL:", secretLink);
 
-      // تم إرسال secret كـ header تلقائيًا مع supabase-js
-      const { data, error } = await supabase
-        .from("users")
-        .select("*")
-        .eq("secret_link", secretLink) // سيُسمح فقط إذا تطابق RLS
-        .single();
+        const { data, error } = await supabase
+          .from("users")
+          .select("*")
+          .eq("secret_link", secretLink)
+          .maybeSingle();   // أسهل للتعامل مع حالة عدم وجود صف
 
-      if (error || !data) {
-        dashboardDiv.innerHTML = "<p class='error'>لم يتم العثور على بيانات المستخدم.</p>";
-        return;
+        console.log("Supabase response:", { data, error });
+
+        // لو يوجد خطأ من Supabase (RLS أو غيره)
+        if (error) {
+          dashboardDiv.innerHTML = `
+            <div class="error">
+خطأ من Supabase:
+${error.message || ""}
+${error.details || ""}
+${error.hint || ""}
+            </div>
+          `;
+          return;
+        }
+
+        // لا يوجد صف مطابق
+        if (!data) {
+          dashboardDiv.innerHTML = "<p class='error' style='direction:rtl'>لم يتم العثور على مستخدم بهذا الرابط السري.</p>";
+          return;
+        }
+
+        // ✅ عرض البيانات
+        dashboardDiv.innerHTML = `
+          <div class="title">مرحبًا ${data.name || "بك"}!</div>
+
+          <div class="info-box">
+            <p><strong>البريد:</strong> ${data.email || "غير متوفر"}</p>
+            <p><strong>الرابط السري:</strong> ${data.secret_link}</p>
+          </div>
+
+          <div class="info-box">
+            <p>سيتم قريبًا عرض:</p>
+            <p>✓ الحملات الإعلانية</p>
+            <p>✓ الإعلانات الرابحة والخاسرة</p>
+            <p>✓ بيانات الأداء اليومية</p>
+          </div>
+        `;
+      } catch (err) {
+        console.error("Unexpected error:", err);
+        dashboardDiv.innerHTML =
+          "<p class='error'>Unexpected JS error: " + err.message + "</p>";
       }
-
-      dashboardDiv.innerHTML = `
-        <div class="title">مرحبًا ${data.name || "بك"}!</div>
-
-        <div class="info-box">
-          <p><strong>البريد:</strong> ${data.email || "غير متوفر"}</p>
-          <p><strong>الرابط السري:</strong> ${data.secret_link}</p>
-        </div>
-
-        <div class="info-box">
-          <p>سيتم قريبًا عرض:</p>
-          <p>✓ الحملات الإعلانية</p>
-          <p>✓ الإعلانات الرابحة والخاسرة</p>
-          <p>✓ بيانات الأداء اليومية</p>
-        </div>
-      `;
     }
 
     loadUser();
