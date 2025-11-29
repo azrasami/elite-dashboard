@@ -1,52 +1,28 @@
-<div class="container">
-
-  <h2 class="section-title">📊 الحملات الإعلانية</h2>
-
-  <!-- فلتر التاريخ -->
-  <div class="filters">
-    <label>من: <input type="date" id="fromDate"></label>
-    <label>إلى: <input type="date" id="toDate"></label>
-    <button id="applyFilter">تطبيق</button>
-  </div>
-
-  <!-- جدول الحملات -->
-  <table class="campaigns-table">
-    <thead>
-      <tr>
-        <th>اسم الحملة</th>
-        <th>النتائج</th>
-        <th>التكلفة</th>
-        <th>CPC</th>
-        <th>ROAS</th>
-        <th>الحالة</th>
-      </tr>
-    </thead>
-    <tbody id="campaignsBody">
-
-      <!-- مثال بيانات ثابتة – سيتم استبدالها لاحقًا -->
-      <tr>
-        <td>Cold – Broad – 18-35</td>
-        <td>120</td>
-        <td>$58</td>
-        <td>$0.48</td>
-        <td class="good">3.2</td>
-        <td><span class="status active">شغالة</span></td>
-      </tr>
-
-      <tr>
-        <td>Remarketing – ATC</td>
-        <td>40</td>
-        <td>$32</td>
-        <td>$0.80</td>
-        <td class="bad">0.7</td>
-        <td><span class="status paused">متوقفة</span></td>
-      </tr>
-
-    </tbody>
-  </table>
-</div>
-
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+<meta charset="UTF-8" />
+<title>Elite Ads Dashboard</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
 <style>
+body {
+  font-family: "Tajawal", sans-serif;
+  background: #f3f4f6;
+  margin: 0;
+  padding: 20px;
+  direction: rtl;
+  text-align: right;
+}
+
+.container {
+  max-width: 900px;
+  margin: auto;
+  background: #fff;
+  padding: 25px;
+  border-radius: 15px;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
 .section-title {
   font-size: 22px;
   margin-bottom: 20px;
@@ -104,3 +80,104 @@
 .status.active { background: #10b981; }
 .status.paused { background: #6b7280; }
 </style>
+</head>
+
+<body>
+
+<div class="container">
+
+  <h2 class="section-title">📊 الحملات الإعلانية</h2>
+
+  <!-- فلاتر التاريخ -->
+  <div class="filters">
+    <label>من: <input type="date" id="fromDate"></label>
+    <label>إلى: <input type="date" id="toDate"></label>
+    <button id="applyFilter">تطبيق</button>
+  </div>
+
+  <!-- جدول الحملات -->
+  <table class="campaigns-table">
+    <thead>
+      <tr>
+        <th>اسم الحملة</th>
+        <th>النتائج</th>
+        <th>التكلفة</th>
+        <th>CPC</th>
+        <th>ROAS</th>
+        <th>الحالة</th>
+      </tr>
+    </thead>
+    <tbody id="campaignsBody">
+      <tr><td colspan="6">جارِ تحميل البيانات...</td></tr>
+    </tbody>
+  </table>
+
+</div>
+
+<!-- كود جلب الحملات -->
+<script>
+
+const ACCESS_TOKEN = "EAApdZC1ZBPW7kBQL3yLyBwc8eWNjJBzNGRDqxeXk82K2EOcqRoz5EYP2zR5CAIxgi3c5bvP2SC2L8naadrylYi7KhZBTJVOSm9e9cc9hBWEwbZB9Hbb07PCuhZAIZBQgedTNtGZCKxgdZBIdZCMRid8r3aK8M26clBNXYmqmqRavUl8f8i3FW6e6GZB2n4y7C6SQy9j7Gk1545fSlP24X17ZC58WvUd";     
+const AD_ACCOUNT_ID = "act_2515994172108876";   
+
+// رابط API لجلب الحملات
+async function fetchCampaigns() {
+  const url = `https://graph.facebook.com/v19.0/${AD_ACCOUNT_ID}/campaigns?fields=name,status,insights{spend,clicks,actions,cpc,roas}&access_token=${ACCESS_TOKEN}`;
+
+  try {
+    const res = await fetch(url);
+    const data = await res.json();
+
+    if (!data.data) {
+      document.getElementById("campaignsBody").innerHTML =
+        `<tr><td colspan="6">حدث خطأ أثناء جلب الحملات.</td></tr>`;
+      return;
+    }
+
+    renderTable(data.data);
+
+  } catch (error) {
+    document.getElementById("campaignsBody").innerHTML =
+      `<tr><td colspan="6">حدث خطأ في الاتصال بالـ API.</td></tr>`;
+  }
+}
+
+// رسم الجدول
+function renderTable(campaigns) {
+  const body = document.getElementById("campaignsBody");
+  body.innerHTML = "";
+
+  campaigns.forEach(camp => {
+    const insights = camp.insights ? camp.insights[0] : null;
+
+    const results = insights?.actions?.find(a => a.action_type === "link_click")?.value || 0;
+    const spend = insights?.spend || 0;
+    const cpc = insights?.cpc || 0;
+    const roas = insights?.roas?.[0]?.value || 0;
+
+    const statusLabel = camp.status === "ACTIVE" 
+      ? `<span class="status active">شغالة</span>` 
+      : `<span class="status paused">متوقفة</span>`;
+
+    const roasClass = roas >= 1 ? "good" : "bad";
+
+    body.innerHTML += `
+      <tr>
+        <td>${camp.name}</td>
+        <td>${results}</td>
+        <td>$${spend}</td>
+        <td>$${cpc}</td>
+        <td class="${roasClass}">${roas}</td>
+        <td>${statusLabel}</td>
+      </tr>
+    `;
+  });
+}
+
+// تشغيل عند فتح الصفحة
+fetchCampaigns();
+
+</script>
+
+</body>
+</html>
