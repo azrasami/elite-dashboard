@@ -24,7 +24,7 @@ body {
 
 .section-title {
   font-size: 24px;
-  margin-bottom: 25px;
+  margin-bottom: 20px;
   color: #111827;
   font-weight: bold;
 }
@@ -71,15 +71,6 @@ body {
 .good { color: #059669; font-weight: bold; }
 .bad { color: #dc2626; font-weight: bold; }
 
-.status {
-  padding: 5px 10px;
-  border-radius: 6px;
-  color: white;
-}
-
-.status.active { background: #10b981; }
-.status.paused { background: #6b7280; }
-.status.learning { background: #2563eb; }
 </style>
 </head>
 
@@ -87,7 +78,7 @@ body {
 
 <div class="container">
 
-  <h2 class="section-title">📊 Ad Campaigns</h2>
+  <h2 class="section-title">📊 Ad Campaigns (Prototype)</h2>
 
   <div class="filters">
     <input type="text" id="accountId" placeholder="Example: act_1234567890">
@@ -103,11 +94,10 @@ body {
         <th>Spend</th>
         <th>CPC</th>
         <th>ROAS</th>
-        <th>Status</th>
       </tr>
     </thead>
     <tbody id="campaignsBody">
-      <tr><td colspan="6">Enter details and click Load Campaigns</td></tr>
+      <tr><td colspan="5">Enter details and click Load Campaigns</td></tr>
     </tbody>
   </table>
 
@@ -117,19 +107,30 @@ body {
 
 async function fetchCampaigns() {
 
-  // ⭐ Realistic fake data
+  // ⭐ Fake realistic prototype data (ONLY ACTIVE + results)
   const fakeData = [
-    { name: "Cold – Broad – 18-35", status: "ACTIVE", insights: [{ actions:[{action_type:"link_click", value:120}], spend:58, cpc:0.48, roas:[{value:3.2}] }]},
-    { name: "Remarketing – ATC", status: "PAUSED", insights: [{ actions:[{action_type:"link_click", value:40}], spend:32, cpc:0.80, roas:[{value:0.7}] }]},
-    { name: "Lookalike – 1% Purchasers", status: "ACTIVE", insights: [{ actions:[{action_type:"link_click", value:310}], spend:140, cpc:0.45, roas:[{value:4.1}] }]},
-    { name: "Retarget – View Content", status: "LEARNING", insights: [{ actions:[{action_type:"link_click", value:90}], spend:50, cpc:0.55, roas:[{value:1.6}] }]},
-    { name: "Top Campaign – Scaling", status: "ACTIVE", insights: [{ actions:[{action_type:"link_click", value:520}], spend:300, cpc:0.60, roas:[{value:5.8}] }]},
-    { name: "Weak Campaign – Stop Soon", status: "PAUSED", insights: [{ actions:[{action_type:"link_click", value:15}], spend:25, cpc:1.60, roas:[{value:0.2}] }]},
-    { name: "Broad – Middle East – Test 3", status: "ACTIVE", insights: [{ actions:[{action_type:"link_click", value:210}], spend:90, cpc:0.42, roas:[{value:2.7}] }]},
-    { name: "ATC – Strong Retargeting", status: "LEARNING", insights: [{ actions:[{action_type:"link_click", value:160}], spend:80, cpc:0.50, roas:[{value:3.9}] }]},
+    // Real store campaigns
+    { name: "Store – Purchase – LLA 1%", status: "ACTIVE",
+      insights: [{ actions:[{action_type:"purchase", value:18}], spend:120, cpc:0.70, roas:[{value:4.8}] }]},
+      
+    { name: "Store – Retargeting – ATC", status: "ACTIVE",
+      insights: [{ actions:[{action_type:"purchase", value:9}], spend:60, cpc:0.55, roas:[{value:3.1}] }]},
+      
+    { name: "Store – Broad – Men 20-40", status: "ACTIVE",
+      insights: [{ actions:[{action_type:"purchase", value:5}], spend:80, cpc:0.62, roas:[{value:1.6}] }]},
+
+    // Losers (still Active)
+    { name: "Cold – Broad Test 3", status: "ACTIVE",
+      insights: [{ actions:[{action_type:"purchase", value:1}], spend:45, cpc:1.20, roas:[{value:0.3}] }]},
+      
+    { name: "Audience Test – Interest A", status: "ACTIVE",
+      insights: [{ actions:[{action_type:"purchase", value:0}], spend:35, cpc:0.85, roas:[{value:0}] }]},
   ];
 
-  renderTable(fakeData);
+  // Filter only ACTIVE store campaigns
+  const activeOnly = fakeData.filter(c => c.status === "ACTIVE");
+
+  renderTable(activeOnly);
 }
 
 function renderTable(campaigns) {
@@ -139,14 +140,10 @@ function renderTable(campaigns) {
   campaigns.forEach(camp => {
     const insights = camp.insights ? camp.insights[0] : null;
 
-    const results = insights?.actions?.find(a => a.action_type === "link_click")?.value || 0;
+    const results = insights?.actions?.find(a => a.action_type === "purchase")?.value || 0;
     const spend = insights?.spend || 0;
     const cpc = insights?.cpc || 0;
     const roas = insights?.roas?.[0]?.value || 0;
-
-    let statusClass = "paused";
-    if (camp.status === "ACTIVE") statusClass = "active";
-    if (camp.status === "LEARNING") statusClass = "learning";
 
     const roasClass = roas >= 1 ? "good" : "bad";
 
@@ -157,7 +154,6 @@ function renderTable(campaigns) {
         <td>$${spend}</td>
         <td>$${cpc}</td>
         <td class="${roasClass}">${roas}</td>
-        <td><span class="status ${statusClass}">${camp.status}</span></td>
       </tr>
     `;
   });
