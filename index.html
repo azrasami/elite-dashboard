@@ -4,6 +4,7 @@
 <meta charset="UTF-8" />
 <title>Elite Ads Dashboard</title>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
+
 <style>
 body {
   font-family: Arial, sans-serif;
@@ -13,14 +14,31 @@ body {
   text-align: center;
 }
 
-.container {
-  max-width: 1100px;
-  margin: auto;
+.container { max-width: 1100px; margin: auto; }
+
+h1 { font-size: 32px; margin-bottom: 20px; }
+
+.input-box {
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: center;
+  gap: 10px;
 }
 
-h1 {
-  font-size: 32px;
-  margin-bottom: 20px;
+.input-box input {
+  padding: 10px;
+  width: 260px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+}
+
+.fetch-btn {
+  padding: 10px 20px;
+  background: #000;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
 }
 
 .top-box {
@@ -38,45 +56,11 @@ h1 {
   text-align: left;
 }
 
-.box h3 {
-  margin: 0;
-  font-size: 20px;
-}
+.box h3 { margin: 0; font-size: 20px; }
+.big-number { font-size: 36px; margin: 10px 0; }
 
-.big-number {
-  font-size: 36px;
-  margin: 10px 0;
-}
-
-.green-box {
-  background: #10b981;
-  color: white;
-}
-
-.red-box {
-  background: #ef4444;
-  color: white;
-}
-
-.buttons {
-  display: flex;
-  justify-content: center;
-  gap: 15px;
-  margin-bottom: 20px;
-}
-
-.btn {
-  padding: 10px 20px;
-  border-radius: 8px;
-  border: none;
-  font-size: 15px;
-  cursor: pointer;
-  color: white;
-}
-
-.win-btn { background: #2563eb; }
-.lose-btn { background: #dc2626; }
-.refresh-btn { background: #6b7280; }
+.green-box { background: #10b981; color: white; }
+.red-box { background: #ef4444; color: white; }
 
 table {
   width: 100%;
@@ -84,6 +68,7 @@ table {
   border-radius: 10px;
   border-collapse: collapse;
   overflow: hidden;
+  margin-top: 20px;
 }
 
 th, td {
@@ -93,31 +78,26 @@ th, td {
 
 .profit { color: #10b981; font-weight: bold; }
 .loss { color: #dc2626; font-weight: bold; }
+
+.win-tag { color: #10b981; font-weight: bold; }
+.lose-tag { color: #dc2626; font-weight: bold; }
 </style>
 </head>
 
 <body>
 
 <div class="container">
+
   <h1>ELITE ADS DASHBOARD</h1>
 
-  <div class="top-box">
-    <div class="box">
-      <h3>Total Budget Today</h3>
-      <div class="big-number" id="budget">$20</div>
-    </div>
-
-    <div class="box green-box" id="profitBox">
-      <h3 id="profitTitle">$110</h3>
-      <div id="profitPercent">45.0%</div>
-    </div>
+  <!-- USER INPUT -->
+  <div class="input-box">
+    <input id="adAccount" placeholder="Enter Ad Account ID (ex: act_1234567890)">
+    <input id="accessToken" placeholder="Enter User Access Token">
+    <button class="fetch-btn" onclick="fetchAds()">Fetch Ads</button>
   </div>
 
-  <div class="buttons">
-    <button class="btn win-btn" onclick="showWinning()">✔ Show only winning ads</button>
-    <button class="btn lose-btn" onclick="showLosing()">✖ Show only losing ads</button>
-    <button class="btn refresh-btn" onclick="loadData()">⟳ Refresh data</button>
-  </div>
+  <div id="loading" style="display:none; margin-top:20px;">Loading ads...</div>
 
   <table>
     <thead>
@@ -127,65 +107,79 @@ th, td {
         <th>CTR</th>
         <th>CPA</th>
         <th>Profit</th>
+        <th>Status</th>
       </tr>
     </thead>
     <tbody id="adsTable"></tbody>
   </table>
+
 </div>
 
 <script>
 
-let ads = [
-  {
-    img: "https://i.imgur.com/zYXRj8C.jpeg",
-    text: "Buy now and save!",
-    ctr: "6.7%",
-    cpa: "$8.75",
-    profit: 32
-  },
-  {
-    img: "https://i.imgur.com/5eX7hVT.jpeg",
-    text: "Join now and get 20% off",
-    ctr: "3.2%",
-    cpa: "$30.11",
-    profit: -12
-  },
-  {
-    img: "https://i.imgur.com/uQqIk8n.jpeg",
-    text: "Sign up and get a free trial",
-    ctr: "1.4%",
-    cpa: "$17.46",
-    profit: 7
-  }
-];
+async function fetchAds() {
+  const act = document.getElementById("adAccount").value.trim();
+  const token = document.getElementById("accessToken").value.trim();
 
-function loadData(filter = "all") {
+  if (!act || !token) {
+    alert("Please enter Ad Account ID and Access Token");
+    return;
+  }
+
+  document.getElementById("loading").style.display = "block";
+
+  const url =
+    `https://graph.facebook.com/v19.0/${act}/ads?fields=name,creative{body},insights{ctr,cpc,spend,actions}&access_token=${token}`;
+
+  try {
+    const res = await fetch(url);
+    const json = await res.json();
+
+    document.getElementById("loading").style.display = "none";
+
+    if (!json.data) {
+      alert("Error fetching ads.");
+      return;
+    }
+
+    renderAds(json.data);
+
+  } catch (e) {
+    document.getElementById("loading").style.display = "none";
+    alert("Connection error");
+  }
+}
+
+function renderAds(ads) {
   const table = document.getElementById("adsTable");
   table.innerHTML = "";
 
-  let filtered = ads;
-  if (filter === "win") filtered = ads.filter(a => a.profit > 0);
-  if (filter === "lose") filtered = ads.filter(a => a.profit <= 0);
+  ads.forEach(ad => {
+    const insights = ad.insights ? ad.insights[0] : {};
+    const cpc = insights.cpc || "$0";
+    const ctr = insights.ctr || "0%";
+    const spend = parseFloat(insights.spend || 0);
 
-  filtered.forEach(ad => {
+    // TEMPORARY RULE:
+    const profit = (Math.random() * 50 - spend).toFixed(0); // وهمي لحين الربط الحقيقي
+
+    const profitClass = profit > 0 ? "profit" : "loss";
+    const tag = profit > 0 ? `<span class="win-tag">WINNER</span>` 
+                           : `<span class="lose-tag">LOSER</span>`;
+
     table.innerHTML += `
       <tr>
-        <td><img src="${ad.img}" width="80" style="border-radius:6px"></td>
-        <td>${ad.text}</td>
-        <td>${ad.ctr}</td>
-        <td>${ad.cpa}</td>
-        <td class="${ad.profit > 0 ? "profit":"loss"}">
-          ${ad.profit > 0 ? "+" : ""}${ad.profit}$
-        </td>
+        <td>${ad.id}</td>
+        <td>${ad.creative?.body || "No text"}</td>
+        <td>${ctr}</td>
+        <td>${cpc}</td>
+        <td class="${profitClass}">${profit}$</td>
+        <td>${tag}</td>
       </tr>
     `;
   });
 }
 
-function showWinning() { loadData("win"); }
-function showLosing() { loadData("lose"); }
-
-loadData();
 </script>
 
 </body>
