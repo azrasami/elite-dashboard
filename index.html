@@ -7,158 +7,185 @@
 <style>
 body {
   font-family: Arial, sans-serif;
-  background: #f3f4f6;
+  background: #f7f7f7;
   margin: 0;
-  padding: 20px;
+  padding: 30px;
   text-align: center;
 }
 
 .container {
-  max-width: 1000px;
+  max-width: 1100px;
   margin: auto;
-  background: #fff;
-  padding: 25px;
-  border-radius: 15px;
-  box-shadow: 0 5px 15px rgba(0,0,0,0.1);
 }
 
-.section-title {
-  font-size: 24px;
+h1 {
+  font-size: 32px;
   margin-bottom: 20px;
-  color: #111827;
-  font-weight: bold;
 }
 
-.filters {
+.top-box {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 25px;
+}
+
+.box {
+  background: white;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.1);
+  width: 48%;
+  text-align: left;
+}
+
+.box h3 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.big-number {
+  font-size: 36px;
+  margin: 10px 0;
+}
+
+.green-box {
+  background: #10b981;
+  color: white;
+}
+
+.red-box {
+  background: #ef4444;
+  color: white;
+}
+
+.buttons {
   display: flex;
   justify-content: center;
   gap: 15px;
-  margin-bottom: 25px;
-  flex-wrap: wrap;
+  margin-bottom: 20px;
 }
 
-.filters input {
-  padding: 7px 10px;
-  border: 1px solid #d1d5db;
-  border-radius: 5px;
-  width: 250px;
-}
-
-.filters button {
-  background: #111827;
-  color: white;
-  padding: 7px 15px;
-  border-radius: 6px;
-  cursor: pointer;
+.btn {
+  padding: 10px 20px;
+  border-radius: 8px;
   border: none;
+  font-size: 15px;
+  cursor: pointer;
+  color: white;
 }
 
-.campaigns-table {
+.win-btn { background: #2563eb; }
+.lose-btn { background: #dc2626; }
+.refresh-btn { background: #6b7280; }
+
+table {
   width: 100%;
-  border-collapse: collapse;
   background: white;
   border-radius: 10px;
+  border-collapse: collapse;
   overflow: hidden;
 }
 
-.campaigns-table th, 
-.campaigns-table td {
+th, td {
   padding: 12px;
   border-bottom: 1px solid #e5e7eb;
-  text-align: center;
 }
 
-.good { color: #059669; font-weight: bold; }
-.bad { color: #dc2626; font-weight: bold; }
-
+.profit { color: #10b981; font-weight: bold; }
+.loss { color: #dc2626; font-weight: bold; }
 </style>
 </head>
 
 <body>
 
 <div class="container">
+  <h1>ELITE ADS DASHBOARD</h1>
 
-  <h2 class="section-title">📊 Ad Campaigns (Prototype)</h2>
+  <div class="top-box">
+    <div class="box">
+      <h3>Total Budget Today</h3>
+      <div class="big-number" id="budget">$20</div>
+    </div>
 
-  <div class="filters">
-    <input type="text" id="accountId" placeholder="Example: act_1234567890">
-    <input type="text" id="userToken" placeholder="Paste User Token here">
-    <button onclick="fetchCampaigns()">Load Campaigns</button>
+    <div class="box green-box" id="profitBox">
+      <h3 id="profitTitle">$110</h3>
+      <div id="profitPercent">45.0%</div>
+    </div>
   </div>
 
-  <table class="campaigns-table">
+  <div class="buttons">
+    <button class="btn win-btn" onclick="showWinning()">✔ Show only winning ads</button>
+    <button class="btn lose-btn" onclick="showLosing()">✖ Show only losing ads</button>
+    <button class="btn refresh-btn" onclick="loadData()">⟳ Refresh data</button>
+  </div>
+
+  <table>
     <thead>
       <tr>
-        <th>Campaign Name</th>
-        <th>Results</th>
-        <th>Spend</th>
-        <th>CPC</th>
-        <th>ROAS</th>
+        <th>Ad</th>
+        <th>Text</th>
+        <th>CTR</th>
+        <th>CPA</th>
+        <th>Profit</th>
       </tr>
     </thead>
-    <tbody id="campaignsBody">
-      <tr><td colspan="5">Enter details and click Load Campaigns</td></tr>
-    </tbody>
+    <tbody id="adsTable"></tbody>
   </table>
-
 </div>
 
 <script>
 
-async function fetchCampaigns() {
+let ads = [
+  {
+    img: "https://i.imgur.com/zYXRj8C.jpeg",
+    text: "Buy now and save!",
+    ctr: "6.7%",
+    cpa: "$8.75",
+    profit: 32
+  },
+  {
+    img: "https://i.imgur.com/5eX7hVT.jpeg",
+    text: "Join now and get 20% off",
+    ctr: "3.2%",
+    cpa: "$30.11",
+    profit: -12
+  },
+  {
+    img: "https://i.imgur.com/uQqIk8n.jpeg",
+    text: "Sign up and get a free trial",
+    ctr: "1.4%",
+    cpa: "$17.46",
+    profit: 7
+  }
+];
 
-  // ⭐ Fake realistic prototype data (ONLY ACTIVE + results)
-  const fakeData = [
-    // Real store campaigns
-    { name: "Store – Purchase – LLA 1%", status: "ACTIVE",
-      insights: [{ actions:[{action_type:"purchase", value:18}], spend:120, cpc:0.70, roas:[{value:4.8}] }]},
-      
-    { name: "Store – Retargeting – ATC", status: "ACTIVE",
-      insights: [{ actions:[{action_type:"purchase", value:9}], spend:60, cpc:0.55, roas:[{value:3.1}] }]},
-      
-    { name: "Store – Broad – Men 20-40", status: "ACTIVE",
-      insights: [{ actions:[{action_type:"purchase", value:5}], spend:80, cpc:0.62, roas:[{value:1.6}] }]},
+function loadData(filter = "all") {
+  const table = document.getElementById("adsTable");
+  table.innerHTML = "";
 
-    // Losers (still Active)
-    { name: "Cold – Broad Test 3", status: "ACTIVE",
-      insights: [{ actions:[{action_type:"purchase", value:1}], spend:45, cpc:1.20, roas:[{value:0.3}] }]},
-      
-    { name: "Audience Test – Interest A", status: "ACTIVE",
-      insights: [{ actions:[{action_type:"purchase", value:0}], spend:35, cpc:0.85, roas:[{value:0}] }]},
-  ];
+  let filtered = ads;
+  if (filter === "win") filtered = ads.filter(a => a.profit > 0);
+  if (filter === "lose") filtered = ads.filter(a => a.profit <= 0);
 
-  // Filter only ACTIVE store campaigns
-  const activeOnly = fakeData.filter(c => c.status === "ACTIVE");
-
-  renderTable(activeOnly);
-}
-
-function renderTable(campaigns) {
-  const body = document.getElementById("campaignsBody");
-  body.innerHTML = "";
-
-  campaigns.forEach(camp => {
-    const insights = camp.insights ? camp.insights[0] : null;
-
-    const results = insights?.actions?.find(a => a.action_type === "purchase")?.value || 0;
-    const spend = insights?.spend || 0;
-    const cpc = insights?.cpc || 0;
-    const roas = insights?.roas?.[0]?.value || 0;
-
-    const roasClass = roas >= 1 ? "good" : "bad";
-
-    body.innerHTML += `
+  filtered.forEach(ad => {
+    table.innerHTML += `
       <tr>
-        <td>${camp.name}</td>
-        <td>${results}</td>
-        <td>$${spend}</td>
-        <td>$${cpc}</td>
-        <td class="${roasClass}">${roas}</td>
+        <td><img src="${ad.img}" width="80" style="border-radius:6px"></td>
+        <td>${ad.text}</td>
+        <td>${ad.ctr}</td>
+        <td>${ad.cpa}</td>
+        <td class="${ad.profit > 0 ? "profit":"loss"}">
+          ${ad.profit > 0 ? "+" : ""}${ad.profit}$
+        </td>
       </tr>
     `;
   });
 }
 
+function showWinning() { loadData("win"); }
+function showLosing() { loadData("lose"); }
+
+loadData();
 </script>
 
 </body>
