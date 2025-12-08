@@ -1,21 +1,20 @@
 <!DOCTYPE html>
-<html lang="ar">
+<html lang="en">
 <head>
 <meta charset="UTF-8" />
 <title>Elite Ads Dashboard</title>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <style>
 body {
-  font-family: "Tajawal", sans-serif;
+  font-family: Arial, sans-serif;
   background: #f3f4f6;
   margin: 0;
   padding: 20px;
-  direction: rtl;
-  text-align: right;
+  text-align: center;
 }
 
 .container {
-  max-width: 900px;
+  max-width: 1000px;
   margin: auto;
   background: #fff;
   padding: 25px;
@@ -24,9 +23,8 @@ body {
 }
 
 .section-title {
-  font-size: 22px;
-  margin-bottom: 20px;
-  text-align: center;
+  font-size: 24px;
+  margin-bottom: 25px;
   color: #111827;
   font-weight: bold;
 }
@@ -81,6 +79,7 @@ body {
 
 .status.active { background: #10b981; }
 .status.paused { background: #6b7280; }
+.status.learning { background: #2563eb; }
 </style>
 </head>
 
@@ -88,67 +87,51 @@ body {
 
 <div class="container">
 
-  <h2 class="section-title">📊 الحملات الإعلانية</h2>
+  <h2 class="section-title">📊 Ad Campaigns</h2>
 
-  <!-- إدخال التوكن و رقم الحساب -->
   <div class="filters">
-    <input type="text" id="accountId" placeholder="مثال: act_1234567890">
-    <input type="text" id="userToken" placeholder="ألصقي هنا User Token">
-    <button onclick="fetchCampaigns()">جلب الحملات</button>
+    <input type="text" id="accountId" placeholder="Example: act_1234567890">
+    <input type="text" id="userToken" placeholder="Paste User Token here">
+    <button onclick="fetchCampaigns()">Load Campaigns</button>
   </div>
 
-  <!-- جدول الحملات -->
   <table class="campaigns-table">
     <thead>
       <tr>
-        <th>اسم الحملة</th>
-        <th>النتائج</th>
-        <th>التكلفة</th>
+        <th>Campaign Name</th>
+        <th>Results</th>
+        <th>Spend</th>
         <th>CPC</th>
         <th>ROAS</th>
-        <th>الحالة</th>
+        <th>Status</th>
       </tr>
     </thead>
     <tbody id="campaignsBody">
-      <tr><td colspan="6">أدخلي البيانات واضغطي "جلب الحملات"</td></tr>
+      <tr><td colspan="6">Enter details and click Load Campaigns</td></tr>
     </tbody>
   </table>
 
 </div>
 
-<!-- كود جلب الحملات -->
 <script>
 
 async function fetchCampaigns() {
 
-  // ⭐ بيانات وهمية فقط
+  // ⭐ Realistic fake data
   const fakeData = [
-    {
-      name: "Cold – Broad – 18-35",
-      status: "ACTIVE",
-      insights: [{
-        actions: [{ action_type: "link_click", value: 120 }],
-        spend: 58,
-        cpc: 0.48,
-        roas: [{ value: 3.2 }]
-      }]
-    },
-    {
-      name: "Remarketing – ATC",
-      status: "PAUSED",
-      insights: [{
-        actions: [{ action_type: "link_click", value: 40 }],
-        spend: 32,
-        cpc: 0.80,
-        roas: [{ value: 0.7 }]
-      }]
-    }
+    { name: "Cold – Broad – 18-35", status: "ACTIVE", insights: [{ actions:[{action_type:"link_click", value:120}], spend:58, cpc:0.48, roas:[{value:3.2}] }]},
+    { name: "Remarketing – ATC", status: "PAUSED", insights: [{ actions:[{action_type:"link_click", value:40}], spend:32, cpc:0.80, roas:[{value:0.7}] }]},
+    { name: "Lookalike – 1% Purchasers", status: "ACTIVE", insights: [{ actions:[{action_type:"link_click", value:310}], spend:140, cpc:0.45, roas:[{value:4.1}] }]},
+    { name: "Retarget – View Content", status: "LEARNING", insights: [{ actions:[{action_type:"link_click", value:90}], spend:50, cpc:0.55, roas:[{value:1.6}] }]},
+    { name: "Top Campaign – Scaling", status: "ACTIVE", insights: [{ actions:[{action_type:"link_click", value:520}], spend:300, cpc:0.60, roas:[{value:5.8}] }]},
+    { name: "Weak Campaign – Stop Soon", status: "PAUSED", insights: [{ actions:[{action_type:"link_click", value:15}], spend:25, cpc:1.60, roas:[{value:0.2}] }]},
+    { name: "Broad – Middle East – Test 3", status: "ACTIVE", insights: [{ actions:[{action_type:"link_click", value:210}], spend:90, cpc:0.42, roas:[{value:2.7}] }]},
+    { name: "ATC – Strong Retargeting", status: "LEARNING", insights: [{ actions:[{action_type:"link_click", value:160}], spend:80, cpc:0.50, roas:[{value:3.9}] }]},
   ];
 
   renderTable(fakeData);
 }
 
-// رسم الجدول
 function renderTable(campaigns) {
   const body = document.getElementById("campaignsBody");
   body.innerHTML = "";
@@ -161,9 +144,9 @@ function renderTable(campaigns) {
     const cpc = insights?.cpc || 0;
     const roas = insights?.roas?.[0]?.value || 0;
 
-    const statusLabel = camp.status === "ACTIVE" 
-      ? `<span class="status active">شغالة</span>` 
-      : `<span class="status paused">متوقفة</span>`;
+    let statusClass = "paused";
+    if (camp.status === "ACTIVE") statusClass = "active";
+    if (camp.status === "LEARNING") statusClass = "learning";
 
     const roasClass = roas >= 1 ? "good" : "bad";
 
@@ -174,7 +157,7 @@ function renderTable(campaigns) {
         <td>$${spend}</td>
         <td>$${cpc}</td>
         <td class="${roasClass}">${roas}</td>
-        <td>${statusLabel}</td>
+        <td><span class="status ${statusClass}">${camp.status}</span></td>
       </tr>
     `;
   });
