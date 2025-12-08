@@ -23,6 +23,7 @@ h1 { font-size: 32px; margin-bottom: 20px; }
   display: flex;
   justify-content: center;
   gap: 10px;
+  flex-wrap: wrap;
 }
 
 .input-box input {
@@ -40,27 +41,6 @@ h1 { font-size: 32px; margin-bottom: 20px; }
   border-radius: 6px;
   cursor: pointer;
 }
-
-.top-box {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 25px;
-}
-
-.box {
-  background: white;
-  padding: 20px;
-  border-radius: 12px;
-  box-shadow: 0 3px 8px rgba(0,0,0,0.1);
-  width: 48%;
-  text-align: left;
-}
-
-.box h3 { margin: 0; font-size: 20px; }
-.big-number { font-size: 36px; margin: 10px 0; }
-
-.green-box { background: #10b981; color: white; }
-.red-box { background: #ef4444; color: white; }
 
 table {
   width: 100%;
@@ -81,6 +61,13 @@ th, td {
 
 .win-tag { color: #10b981; font-weight: bold; }
 .lose-tag { color: #dc2626; font-weight: bold; }
+
+.ad-image {
+  width: 80px;
+  height: 80px;
+  object-fit: cover;
+  border-radius: 6px;
+}
 </style>
 </head>
 
@@ -102,11 +89,11 @@ th, td {
   <table>
     <thead>
       <tr>
-        <th>Ad</th>
-        <th>Text</th>
+        <th>Image</th>
+        <th>Ad Name</th>
         <th>CTR</th>
-        <th>CPA</th>
-        <th>Profit</th>
+        <th>CPC</th>
+        <th>ROAS</th>
         <th>Status</th>
       </tr>
     </thead>
@@ -129,7 +116,7 @@ async function fetchAds() {
   document.getElementById("loading").style.display = "block";
 
   const url =
-    `https://graph.facebook.com/v19.0/${act}/ads?fields=name,creative{body},insights{ctr,cpc,spend,actions}&access_token=${token}`;
+    `https://graph.facebook.com/v19.0/${act}/ads?fields=name,creative{object_story_spec},insights{ctr,cpc,spend,roas}&access_token=${token}`;
 
   try {
     const res = await fetch(url);
@@ -156,25 +143,28 @@ function renderAds(ads) {
 
   ads.forEach(ad => {
     const insights = ad.insights ? ad.insights[0] : {};
-    const cpc = insights.cpc || "$0";
     const ctr = insights.ctr || "0%";
-    const spend = parseFloat(insights.spend || 0);
+    const cpc = insights.cpc || "$0";
+    const roas = insights.roas?.[0]?.value || 0;
 
-    // TEMPORARY RULE:
-    const profit = (Math.random() * 50 - spend).toFixed(0); // وهمي لحين الربط الحقيقي
+    const imageUrl =
+      ad.creative?.object_story_spec?.link_data?.image_url ||
+      "https://via.placeholder.com/80";
 
-    const profitClass = profit > 0 ? "profit" : "loss";
-    const tag = profit > 0 ? `<span class="win-tag">WINNER</span>` 
-                           : `<span class="lose-tag">LOSER</span>`;
+    const status = roas > 1
+      ? `<span class="win-tag">WINNING</span>`
+      : `<span class="lose-tag">LOSING</span>`;
+
+    const roasClass = roas > 1 ? "profit" : "loss";
 
     table.innerHTML += `
       <tr>
-        <td>${ad.id}</td>
-        <td>${ad.creative?.body || "No text"}</td>
+        <td><img class="ad-image" src="${imageUrl}"></td>
+        <td>${ad.name}</td>
         <td>${ctr}</td>
         <td>${cpc}</td>
-        <td class="${profitClass}">${profit}$</td>
-        <td>${tag}</td>
+        <td class="${roasClass}">${roas}</td>
+        <td>${status}</td>
       </tr>
     `;
   });
