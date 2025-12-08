@@ -121,32 +121,31 @@ body {
 
 async function fetchCampaigns() {
 
-  const ACCESS_TOKEN = document.getElementById("userToken").value.trim();
-  const AD_ACCOUNT_ID = document.getElementById("accountId").value.trim();
-
-  if (!ACCESS_TOKEN || !AD_ACCOUNT_ID) {
-    alert("رجاءً أدخلي الـ User Token و Ad Account ID");
-    return;
-  }
-
-  const url = `https://graph.facebook.com/v19.0/${AD_ACCOUNT_ID}/campaigns?fields=name,status,insights{spend,clicks,actions,cpc,roas}&access_token=${ACCESS_TOKEN}`;
-
-  try {
-    const res = await fetch(url);
-    const data = await res.json();
-
-    if (!data.data) {
-      document.getElementById("campaignsBody").innerHTML =
-        `<tr><td colspan="6">حدث خطأ أثناء جلب الحملات.</td></tr>`;
-      return;
+  // ⭐ بيانات وهمية فقط
+  const fakeData = [
+    {
+      name: "Cold – Broad – 18-35",
+      status: "ACTIVE",
+      insights: [{
+        actions: [{ action_type: "link_click", value: 120 }],
+        spend: 58,
+        cpc: 0.48,
+        roas: [{ value: 3.2 }]
+      }]
+    },
+    {
+      name: "Remarketing – ATC",
+      status: "PAUSED",
+      insights: [{
+        actions: [{ action_type: "link_click", value: 40 }],
+        spend: 32,
+        cpc: 0.80,
+        roas: [{ value: 0.7 }]
+      }]
     }
+  ];
 
-    renderTable(data.data);
-
-  } catch (error) {
-    document.getElementById("campaignsBody").innerHTML =
-      `<tr><td colspan="6">حدث خطأ في الاتصال بالـ API.</td></tr>`;
-  }
+  renderTable(fakeData);
 }
 
 // رسم الجدول
