@@ -111,11 +111,12 @@ async function fetchAds() {
 
   document.getElementById("loading").style.display = "block";
 
-  // IMPORTANT: Correct fields + date_preset to avoid 400 error
-  const url = `https://graph.facebook.com/v19.0/${act}/ads
-    ?fields=name,creative{thumbnail_url},insights.date_preset(lifetime){ctr,cpc,spend,actions,purchase_roas}
+  const url = `
+    https://graph.facebook.com/v19.0/${act}/ads
+    ?fields=name,creative{thumbnail_url},insights.date_preset(maximum){ctr,cpc,spend,actions,action_values}
     &limit=50
-    &access_token=${token}`.replace(/\s+/g, '');
+    &access_token=${token}
+  `.replace(/\s+/g, '');
 
   try {
     const res = await fetch(url);
@@ -145,10 +146,11 @@ function renderAds(ads) {
     const insights = ad.insights ? ad.insights[0] : {};
     const ctr = insights.ctr || "0%";
     const cpc = insights.cpc || "0";
-    
+
+    // Extract ROAS from action_values
     let roas = 0;
-    if (insights.purchase_roas && insights.purchase_roas[0]) {
-      roas = insights.purchase_roas[0].value;
+    if (insights.action_values && insights.action_values[0]) {
+      roas = insights.action_values[0].value || 0;
     }
 
     const imageUrl =
