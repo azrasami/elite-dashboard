@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
+<meta charset="UTF-8">
 <title>Elite Ads Dashboard</title>
-<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1">
 
 <style>
 body {
@@ -13,8 +13,11 @@ body {
   padding: 30px;
   text-align: center;
 }
+
 .container { max-width: 1100px; margin: auto; }
+
 h1 { font-size: 32px; margin-bottom: 20px; }
+
 .input-box {
   margin-bottom: 20px;
   display: flex;
@@ -22,12 +25,14 @@ h1 { font-size: 32px; margin-bottom: 20px; }
   gap: 10px;
   flex-wrap: wrap;
 }
+
 .input-box input {
   padding: 10px;
   width: 260px;
   border: 1px solid #ccc;
   border-radius: 6px;
 }
+
 .fetch-btn {
   padding: 10px 20px;
   background: #000;
@@ -36,6 +41,7 @@ h1 { font-size: 32px; margin-bottom: 20px; }
   border-radius: 6px;
   cursor: pointer;
 }
+
 table {
   width: 100%;
   background: white;
@@ -44,14 +50,15 @@ table {
   overflow: hidden;
   margin-top: 20px;
 }
+
 th, td {
   padding: 12px;
   border-bottom: 1px solid #e5e7eb;
 }
+
 .profit { color: #10b981; font-weight: bold; }
 .loss { color: #dc2626; font-weight: bold; }
-.win-tag { color: #10b981; font-weight: bold; }
-.lose-tag { color: #dc2626; font-weight: bold; }
+
 .ad-image {
   width: 80px;
   height: 80px;
@@ -68,12 +75,12 @@ th, td {
   <h1>ELITE ADS DASHBOARD</h1>
 
   <div class="input-box">
-    <input id="adAccount" placeholder="Enter Ad Account ID (ex: act_123456789)">
-    <input id="accessToken" placeholder="Enter System User Token">
+    <input id="adAccount" placeholder="act_XXXXXXXXXXXX">
+    <input id="accessToken" placeholder="Access Token">
     <button class="fetch-btn" onclick="fetchAds()">Fetch Ads</button>
   </div>
 
-  <div id="loading" style="display:none; margin-top:20px;">Loading ads...</div>
+  <div id="loading" style="display:none;margin-top:20px;">Loading ads...</div>
 
   <table>
     <thead>
@@ -94,35 +101,22 @@ th, td {
 <script>
 
 async function fetchAds() {
-  const act = document.getElementById("adAccount").value.trim();
+  const account = document.getElementById("adAccount").value.trim();
   const token = document.getElementById("accessToken").value.trim();
-
-  if (!act || !token) {
-    alert("Please enter Ad Account ID and Access Token");
-    return;
-  }
 
   document.getElementById("loading").style.display = "block";
 
-  const url = `/api/ads?act=${act}&token=${token}`;
+  const res = await fetch(`/api/ads?account=${account}&token=${token}`);
+  const data = await res.json();
 
-  try {
-    const res = await fetch(url);
-    const json = await res.json();
+  document.getElementById("loading").style.display = "none";
 
-    document.getElementById("loading").style.display = "none";
-
-    if (!json.data) {
-      alert("Error fetching ads.");
-      return;
-    }
-
-    renderAds(json.data);
-
-  } catch (e) {
-    document.getElementById("loading").style.display = "none";
-    alert("Connection error");
+  if (!data.success) {
+    alert(data.error || "Error fetching ads");
+    return;
   }
+
+  renderAds(data.ads);
 }
 
 function renderAds(ads) {
@@ -130,31 +124,21 @@ function renderAds(ads) {
   table.innerHTML = "";
 
   ads.forEach(ad => {
-    const insights = ad.insights ? ad.insights[0] : {};
-    const ctr = insights.ctr || "0%";
-    const cpc = insights.cpc || "$0";
-    const roas = insights.roas?.[0]?.value || 0;
+    const ctr = ad.ctr || "0%";
+    const cpc = ad.cpc || "$0";
+    const roas = ad.roas || 0;
 
-    const imageUrl =
-      ad.creative?.object_story_spec?.link_data?.image_url ||
-      "https://via.placeholder.com/80";
-
-    const status = roas > 1
-      ? `<span class="win-tag">WINNING</span>`
-      : `<span class="lose-tag">LOSING</span>`;
-
-    const roasClass = roas > 1 ? "profit" : "loss";
-
-    table.innerHTML += `
+    const row = `
       <tr>
-        <td><img class="ad-image" src="${imageUrl}"></td>
+        <td><img src="${ad.image}" class="ad-image"></td>
         <td>${ad.name}</td>
         <td>${ctr}</td>
         <td>${cpc}</td>
-        <td class="${roasClass}">${roas}</td>
-        <td>${status}</td>
+        <td class="${roas > 1 ? "profit" : "loss"}">${roas}</td>
+        <td>${roas > 1 ? "WINNING" : "LOSING"}</td>
       </tr>
     `;
+    table.innerHTML += row;
   });
 }
 
