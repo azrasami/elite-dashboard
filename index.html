@@ -1,15 +1,14 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-<meta charset="UTF-8">
+<meta charset="UTF-8" />
 <title>Elite Ads Dashboard</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1" />
 
 <style>
 body {
-  font-family: Arial, sans-serif;
+  font-family: Arial;
   background: #f7f7f7;
-  margin: 0;
   padding: 30px;
   text-align: center;
 }
@@ -19,7 +18,6 @@ body {
 h1 { font-size: 32px; margin-bottom: 20px; }
 
 .input-box {
-  margin-bottom: 20px;
   display: flex;
   justify-content: center;
   gap: 10px;
@@ -35,29 +33,24 @@ h1 { font-size: 32px; margin-bottom: 20px; }
 
 .fetch-btn {
   padding: 10px 20px;
-  background: #000;
+  background: black;
   color: white;
   border: none;
   border-radius: 6px;
-  cursor: pointer;
 }
 
 table {
   width: 100%;
   background: white;
   border-radius: 10px;
-  border-collapse: collapse;
-  overflow: hidden;
   margin-top: 20px;
+  border-collapse: collapse;
 }
 
 th, td {
   padding: 12px;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid #eee;
 }
-
-.profit { color: #10b981; font-weight: bold; }
-.loss { color: #dc2626; font-weight: bold; }
 
 .ad-image {
   width: 80px;
@@ -69,80 +62,68 @@ th, td {
 </head>
 
 <body>
-
 <div class="container">
 
-  <h1>ELITE ADS DASHBOARD</h1>
+<h1>ELITE ADS DASHBOARD</h1>
 
-  <div class="input-box">
-    <input id="adAccount" placeholder="act_XXXXXXXXXXXX">
-    <input id="accessToken" placeholder="Access Token">
-    <button class="fetch-btn" onclick="fetchAds()">Fetch Ads</button>
-  </div>
+<div class="input-box">
+  <input id="adAccount" placeholder="act_XXXXXXXX" />
+  <input id="token" placeholder="Access Token" />
+  <button class="fetch-btn" onclick="fetchAds()">Fetch Ads</button>
+</div>
 
-  <div id="loading" style="display:none;margin-top:20px;">Loading ads...</div>
-
-  <table>
-    <thead>
-      <tr>
-        <th>Image</th>
-        <th>Ad Name</th>
-        <th>CTR</th>
-        <th>CPC</th>
-        <th>ROAS</th>
-        <th>Status</th>
-      </tr>
-    </thead>
-    <tbody id="adsTable"></tbody>
-  </table>
+<table>
+  <thead>
+    <tr>
+      <th>Image</th>
+      <th>Ad Name</th>
+      <th>CTR</th>
+      <th>CPC</th>
+      <th>ROAS</th>
+      <th>Status</th>
+    </tr>
+  </thead>
+  <tbody id="adsTable"></tbody>
+</table>
 
 </div>
 
 <script>
-
 async function fetchAds() {
-  const account = document.getElementById("adAccount").value.trim();
-  const token = document.getElementById("accessToken").value.trim();
+  const account = document.getElementById("adAccount").value;
+  const token = document.getElementById("token").value;
 
-  document.getElementById("loading").style.display = "block";
+  const url = `/api/ads?adAccount=${account}&token=${token}`;
 
-  const res = await fetch(`/api/ads?account=${account}&token=${token}`);
-  const data = await res.json();
+  try {
+    const res = await fetch(url);
+    const json = await res.json();
 
-  document.getElementById("loading").style.display = "none";
+    if (!json.ads) {
+      alert("Error: " + JSON.stringify(json.error));
+      return;
+    }
 
-  if (!data.success) {
-    alert(data.error || "Error fetching ads");
-    return;
+    const table = document.getElementById("adsTable");
+    table.innerHTML = "";
+
+    json.ads.forEach(ad => {
+      table.innerHTML += `
+        <tr>
+          <td><img class="ad-image" src="${ad.imageUrl}" /></td>
+          <td>${ad.name}</td>
+          <td>${ad.ctr}</td>
+          <td>${ad.cpc}</td>
+          <td>${ad.roas}</td>
+          <td>${ad.status}</td>
+        </tr>
+      `;
+    });
+
+  } catch (err) {
+    alert("Connection error");
   }
-
-  renderAds(data.ads);
 }
-
-function renderAds(ads) {
-  const table = document.getElementById("adsTable");
-  table.innerHTML = "";
-
-  ads.forEach(ad => {
-    const ctr = ad.ctr || "0%";
-    const cpc = ad.cpc || "$0";
-    const roas = ad.roas || 0;
-
-    const row = `
-      <tr>
-        <td><img src="${ad.image}" class="ad-image"></td>
-        <td>${ad.name}</td>
-        <td>${ctr}</td>
-        <td>${cpc}</td>
-        <td class="${roas > 1 ? "profit" : "loss"}">${roas}</td>
-        <td>${roas > 1 ? "WINNING" : "LOSING"}</td>
-      </tr>
-    `;
-    table.innerHTML += row;
-  });
-}
-
 </script>
-
 </body>
 </html>
