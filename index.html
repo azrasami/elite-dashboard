@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
+<meta charset="UTF-8">
 <title>Elite Ads Dashboard</title>
-<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1">
 
 <style>
 body {
@@ -13,7 +13,6 @@ body {
   padding: 30px;
   text-align: center;
 }
-
 .container { max-width: 1100px; margin: auto; }
 
 h1 { font-size: 32px; margin-bottom: 20px; }
@@ -74,13 +73,11 @@ th, td {
 <body>
 
 <div class="container">
-
   <h1>ELITE ADS DASHBOARD</h1>
 
-  <!-- USER INPUT -->
   <div class="input-box">
-    <input id="adAccount" placeholder="Enter Ad Account ID (ex: act_1234567890)">
-    <input id="accessToken" placeholder="Enter User Access Token">
+    <input id="adAccount" placeholder="act_123456789">
+    <input id="accessToken" placeholder="Access Token">
     <button class="fetch-btn" onclick="fetchAds()">Fetch Ads</button>
   </div>
 
@@ -103,7 +100,6 @@ th, td {
 </div>
 
 <script>
-
 async function fetchAds() {
   const act = document.getElementById("adAccount").value.trim();
   const token = document.getElementById("accessToken").value.trim();
@@ -115,8 +111,11 @@ async function fetchAds() {
 
   document.getElementById("loading").style.display = "block";
 
-  const url =
-    `https://graph.facebook.com/v19.0/${act}/ads?fields=name,creative{object_story_spec},insights{ctr,cpc,spend,roas}&access_token=${token}`;
+  // IMPORTANT: Correct fields + date_preset to avoid 400 error
+  const url = `https://graph.facebook.com/v19.0/${act}/ads
+    ?fields=name,creative{thumbnail_url},insights.date_preset(lifetime){ctr,cpc,spend,actions,purchase_roas}
+    &limit=50
+    &access_token=${token}`.replace(/\s+/g, '');
 
   try {
     const res = await fetch(url);
@@ -126,13 +125,14 @@ async function fetchAds() {
 
     if (!json.data) {
       alert("Error fetching ads.");
+      console.log(json);
       return;
     }
 
     renderAds(json.data);
 
   } catch (e) {
-    document.getElementById("loading").style.display = "none";
+    console.log(e);
     alert("Connection error");
   }
 }
@@ -144,16 +144,20 @@ function renderAds(ads) {
   ads.forEach(ad => {
     const insights = ad.insights ? ad.insights[0] : {};
     const ctr = insights.ctr || "0%";
-    const cpc = insights.cpc || "$0";
-    const roas = insights.roas?.[0]?.value || 0;
+    const cpc = insights.cpc || "0";
+    
+    let roas = 0;
+    if (insights.purchase_roas && insights.purchase_roas[0]) {
+      roas = insights.purchase_roas[0].value;
+    }
 
     const imageUrl =
-      ad.creative?.object_story_spec?.link_data?.image_url ||
+      ad.creative?.thumbnail_url ||
       "https://via.placeholder.com/80";
 
     const status = roas > 1
-      ? `<span class="win-tag">WINNING</span>`
-      : `<span class="lose-tag">LOSING</span>`;
+      ? `<span class='win-tag'>WINNING</span>`
+      : `<span class='lose-tag'>LOSING</span>`;
 
     const roasClass = roas > 1 ? "profit" : "loss";
 
@@ -169,7 +173,6 @@ function renderAds(ads) {
     `;
   });
 }
-
 </script>
 
 </body>
