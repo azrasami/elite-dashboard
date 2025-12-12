@@ -14,15 +14,9 @@ body {
   text-align: center;
 }
 
-.container {
-  max-width: 1100px;
-  margin: auto;
-}
+.container { max-width: 1100px; margin: auto; }
 
-h1 {
-  font-size: 32px;
-  margin-bottom: 20px;
-}
+h1 { font-size: 32px; margin-bottom: 20px; }
 
 .input-box {
   margin-bottom: 20px;
@@ -53,7 +47,6 @@ table {
   background: white;
   border-radius: 10px;
   border-collapse: collapse;
-  overflow: hidden;
   margin-top: 20px;
 }
 
@@ -62,10 +55,9 @@ th, td {
   border-bottom: 1px solid #e5e7eb;
 }
 
-.win {
-  color: #10b981;
-  font-weight: bold;
-}
+.win { color: #10b981; font-weight: bold; }
+.lose { color: #dc2626; font-weight: bold; }
+.nodata { color: #6b7280; font-weight: bold; }
 
 .ad-image {
   width: 80px;
@@ -77,6 +69,7 @@ th, td {
 </head>
 
 <body>
+
 <div class="container">
 
 <h1>ELITE ADS DASHBOARD</h1>
@@ -87,20 +80,18 @@ th, td {
   <button class="fetch-btn" onclick="fetchAds()">Fetch Ads</button>
 </div>
 
-<div id="loading" style="display:none;">Loading...</div>
-
 <table>
-  <thead>
-    <tr>
-      <th>Image</th>
-      <th>Ad Name</th>
-      <th>CTR</th>
-      <th>CPC</th>
-      <th>ROAS</th>
-      <th>Status</th>
-    </tr>
-  </thead>
-  <tbody id="adsTable"></tbody>
+<thead>
+<tr>
+  <th>Image</th>
+  <th>Ad Name</th>
+  <th>CTR</th>
+  <th>CPC</th>
+  <th>Spend</th>
+  <th>Status</th>
+</tr>
+</thead>
+<tbody id="adsTable"></tbody>
 </table>
 
 </div>
@@ -111,27 +102,14 @@ async function fetchAds() {
   const token = document.getElementById("accessToken").value.trim();
 
   if (!act || !token) {
-    alert("Please enter Ad Account ID and Access Token");
+    alert("Please enter Ad Account ID and Token");
     return;
   }
 
-  document.getElementById("loading").style.display = "block";
-  document.getElementById("adsTable").innerHTML = "";
+  const res = await fetch(`/api/ads?adAccount=${encodeURIComponent(act)}&token=${encodeURIComponent(token)}`);
+  const json = await res.json();
 
-  try {
-    const res = await fetch(`/api/ads?adAccount=${encodeURIComponent(act)}&token=${encodeURIComponent(token)}`);
-    const json = await res.json();
-
-    document.getElementById("loading").style.display = "none";
-
-    if (!json.data || !Array.isArray(json.data)) {
-      return;
-    }
-
-    renderAds(json.data);
-  } catch (err) {
-    document.getElementById("loading").style.display = "none";
-  }
+  renderAds(json.data || []);
 }
 
 function renderAds(ads) {
@@ -139,38 +117,32 @@ function renderAds(ads) {
   table.innerHTML = "";
 
   ads.forEach(ad => {
-    const insights = ad.insights?.[0] || {};
+    const impressions = ad.impressions;
+    const clicks = ad.clicks;
+    const spend = ad.spend;
 
-    const impressions = Number(insights.impressions || 0);
-    const clicks = Number(insights.clicks || 0);
-    const spend = Number(insights.spend || 0);
-    const purchases = Number(insights.website_purchases || 0);
-    const revenue = Number(insights.purchase_roas?.[0]?.value || 0);
+    const ctr =
+      impressions > 0 ? ((clicks / impressions) * 100).toFixed(2) + "%" : "—";
 
-    const ctr = impressions > 0 ? ((clicks / impressions) * 100).toFixed(2) + "%" : "—";
-    const cpc = clicks > 0 ? (spend / clicks).toFixed(2) : "—";
-    const roas = spend > 0 && revenue > 0 ? (revenue / spend).toFixed(2) : "—";
+    const cpc =
+      clicks > 0 ? (spend / clicks).toFixed(2) : "—";
 
-    let status = "";
-    let statusClass = "";
+    let statusText = "🕒 NO DATA YET";
+    let statusClass = "nodata";
 
-    if (spend > 0 && revenue > 0 && revenue / spend > 1) {
-      status = "WIN";
-      statusClass = "win";
+    if (spend > 0 && clicks > 0) {
+      statusText = "LOSE";
+      statusClass = "lose";
     }
-
-    const imageUrl =
-      ad.creative?.thumbnail_url ||
-      "https://via.placeholder.com/80?text=Ad";
 
     table.innerHTML += `
       <tr>
-        <td><img class="ad-image" src="${imageUrl}" onerror="this.src='https://via.placeholder.com/80?text=Ad'"></td>
-        <td>${ad.name || "—"}</td>
+        <td><img class="ad-image" src="${ad.imageUrl}"></td>
+        <td>${ad.name}</td>
         <td>${ctr}</td>
         <td>${cpc}</td>
-        <td>${roas}</td>
-        <td class="${statusClass}">${status}</td>
+        <td>$${spend.toFixed(2)}</td>
+        <td class="${statusClass}">${statusText}</td>
       </tr>
     `;
   });
