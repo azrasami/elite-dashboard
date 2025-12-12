@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="UTF-8" />
 <title>Elite Ads Dashboard</title>
@@ -7,17 +7,25 @@
 
 <style>
 body {
-  font-family: Arial;
+  font-family: Arial, sans-serif;
   background: #f7f7f7;
+  margin: 0;
   padding: 30px;
   text-align: center;
 }
 
-.container { max-width: 1100px; margin: auto; }
+.container {
+  max-width: 1100px;
+  margin: auto;
+}
 
-h1 { font-size: 32px; margin-bottom: 20px; }
+h1 {
+  font-size: 32px;
+  margin-bottom: 20px;
+}
 
 .input-box {
+  margin-bottom: 20px;
   display: flex;
   justify-content: center;
   gap: 10px;
@@ -33,23 +41,30 @@ h1 { font-size: 32px; margin-bottom: 20px; }
 
 .fetch-btn {
   padding: 10px 20px;
-  background: black;
+  background: #000;
   color: white;
   border: none;
   border-radius: 6px;
+  cursor: pointer;
 }
 
 table {
   width: 100%;
   background: white;
   border-radius: 10px;
-  margin-top: 20px;
   border-collapse: collapse;
+  overflow: hidden;
+  margin-top: 20px;
 }
 
 th, td {
   padding: 12px;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.win {
+  color: #10b981;
+  font-weight: bold;
 }
 
 .ad-image {
@@ -67,10 +82,12 @@ th, td {
 <h1>ELITE ADS DASHBOARD</h1>
 
 <div class="input-box">
-  <input id="adAccount" placeholder="act_XXXXXXXX" />
-  <input id="token" placeholder="Access Token" />
+  <input id="adAccount" placeholder="act_123456789">
+  <input id="accessToken" placeholder="Access Token">
   <button class="fetch-btn" onclick="fetchAds()">Fetch Ads</button>
 </div>
+
+<div id="loading" style="display:none;">Loading...</div>
 
 <table>
   <thead>
@@ -90,40 +107,75 @@ th, td {
 
 <script>
 async function fetchAds() {
-  const account = document.getElementById("adAccount").value;
-  const token = document.getElementById("token").value;
+  const act = document.getElementById("adAccount").value.trim();
+  const token = document.getElementById("accessToken").value.trim();
 
-  const url = `/api/ads?adAccount=${account}&token=${token}`;
+  if (!act || !token) {
+    alert("Please enter Ad Account ID and Access Token");
+    return;
+  }
+
+  document.getElementById("loading").style.display = "block";
+  document.getElementById("adsTable").innerHTML = "";
 
   try {
-    const res = await fetch(url);
+    const res = await fetch(`/api/ads?adAccount=${encodeURIComponent(act)}&token=${encodeURIComponent(token)}`);
     const json = await res.json();
 
-    if (!json.ads) {
-      alert("Error: " + JSON.stringify(json.error));
+    document.getElementById("loading").style.display = "none";
+
+    if (!json.data || !Array.isArray(json.data)) {
       return;
     }
 
-    const table = document.getElementById("adsTable");
-    table.innerHTML = "";
-
-    json.ads.forEach(ad => {
-      table.innerHTML += `
-        <tr>
-          <td><img class="ad-image" src="${ad.imageUrl}" /></td>
-          <td>${ad.name}</td>
-          <td>${ad.ctr}</td>
-          <td>${ad.cpc}</td>
-          <td>${ad.roas}</td>
-          <td>${ad.status}</td>
-        </tr>
-      `;
-    });
-
+    renderAds(json.data);
   } catch (err) {
-    alert("Connection error");
+    document.getElementById("loading").style.display = "none";
   }
 }
+
+function renderAds(ads) {
+  const table = document.getElementById("adsTable");
+  table.innerHTML = "";
+
+  ads.forEach(ad => {
+    const insights = ad.insights?.[0] || {};
+
+    const impressions = Number(insights.impressions || 0);
+    const clicks = Number(insights.clicks || 0);
+    const spend = Number(insights.spend || 0);
+    const purchases = Number(insights.website_purchases || 0);
+    const revenue = Number(insights.purchase_roas?.[0]?.value || 0);
+
+    const ctr = impressions > 0 ? ((clicks / impressions) * 100).toFixed(2) + "%" : "—";
+    const cpc = clicks > 0 ? (spend / clicks).toFixed(2) : "—";
+    const roas = spend > 0 && revenue > 0 ? (revenue / spend).toFixed(2) : "—";
+
+    let status = "";
+    let statusClass = "";
+
+    if (spend > 0 && revenue > 0 && revenue / spend > 1) {
+      status = "WIN";
+      statusClass = "win";
+    }
+
+    const imageUrl =
+      ad.creative?.thumbnail_url ||
+      "https://via.placeholder.com/80?text=Ad";
+
+    table.innerHTML += `
+      <tr>
+        <td><img class="ad-image" src="${imageUrl}" onerror="this.src='https://via.placeholder.com/80?text=Ad'"></td>
+        <td>${ad.name || "—"}</td>
+        <td>${ctr}</td>
+        <td>${cpc}</td>
+        <td>${roas}</td>
+        <td class="${statusClass}">${status}</td>
+      </tr>
+    `;
+  });
+}
 </script>
+
 </body>
 </html>
