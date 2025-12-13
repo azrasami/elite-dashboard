@@ -1,12 +1,13 @@
 export default async function handler(req, res) {
-  const { adAccount, token, aov } = req.query;
+  const { adAccount, token } = req.query;
 
-  if (!adAccount || !token || !aov) {
+  if (!adAccount || !token) {
     return res.status(400).json({ error: "Missing parameters" });
   }
 
   try {
-    const url = `https://graph.facebook.com/v19.0/${adAccount}/ads?fields=name,insights{spend}&date_preset=last_30d&access_token=${token}`;
+    const url = `https://graph.facebook.com/v19.0/${adAccount}/ads?fields=name,insights{spend,purchase_roas}&date_preset=last_30d&access_token=${token}`;
+
     const fbRes = await fetch(url);
     const data = await fbRes.json();
 
@@ -37,6 +38,7 @@ export default async function handler(req, res) {
     });
 
     res.status(200).json({ ads });
+
   } catch (e) {
     res.status(500).json({ error: "Server error" });
   }
