@@ -1,12 +1,12 @@
 export default async function handler(req, res) {
-  const { adAccount, token, aov } = req.query;
+  const { adAccount, token } = req.query;
 
-  if (!adAccount || !token || !aov) {
+  if (!adAccount || !token) {
     return res.status(400).json({ error: "Missing parameters" });
   }
 
   try {
-    const url = `https://graph.facebook.com/v19.0/${adAccount}/ads?fields=name,creative{thumbnail_url},insights{spend,purchases}&access_token=${token}`;
+    const url = `https://graph.facebook.com/v19.0/${adAccount}/ads?fields=name,creative{thumbnail_url},insights{spend,purchase_roas}&access_token=${token}`;
     const fbRes = await fetch(url);
     const data = await fbRes.json();
 
@@ -17,20 +17,22 @@ export default async function handler(req, res) {
     const ads = data.data.map(ad => {
       const insights = ad.insights?.[0] || {};
       const spend = Number(insights.spend || 0);
-      const purchases = Number(insights.purchases || 0);
-      const revenue = purchases * Number(aov);
-      const roas = spend > 0 ? revenue / spend : 0;
 
-      let status = "NO DATA YET";
+      const roas =
+        insights.purchase_roas && insights.purchase_roas[0]
+          ? Number(insights.purchase_roas[0].value)
+          : 0;
+
+      let status = "🕒 NO DATA YET";
       if (spend > 0) status = roas >= 1 ? "WIN" : "LOSE";
 
       return {
         name: ad.name,
         spend: spend.toFixed(2),
-        purchases,
         roas: roas.toFixed(2),
         status,
-        image: ad.creative?.thumbnail_url || "https://via.placeholder.com/80"
+        imageUrl:
+          ad.creative?.thumbnail_url || "https://via.placeholder.com/80"
       };
     });
 
