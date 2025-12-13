@@ -9,33 +9,38 @@
 body {
   font-family: Arial, sans-serif;
   background: #f7f7f7;
-  margin: 0;
   padding: 30px;
   text-align: center;
 }
 
-.container { max-width: 1000px; margin: auto; }
+.container {
+  max-width: 900px;
+  margin: auto;
+}
 
-h1 { font-size: 32px; margin-bottom: 20px; }
+h1 {
+  font-size: 32px;
+  margin-bottom: 20px;
+}
 
 .input-box {
-  margin-bottom: 20px;
   display: flex;
-  justify-content: center;
   gap: 10px;
+  justify-content: center;
   flex-wrap: wrap;
+  margin-bottom: 20px;
 }
 
-.input-box input {
+input {
   padding: 10px;
   width: 260px;
-  border: 1px solid #ccc;
   border-radius: 6px;
+  border: 1px solid #ccc;
 }
 
-.fetch-btn {
+button {
   padding: 10px 20px;
-  background: #000;
+  background: black;
   color: white;
   border: none;
   border-radius: 6px;
@@ -67,15 +72,12 @@ th, td {
 
 <h1>ELITE ADS DASHBOARD</h1>
 
-<!-- INPUTS -->
 <div class="input-box">
   <input id="adAccount" placeholder="act_123456789">
   <input id="accessToken" placeholder="Access Token">
-  <input id="aov" placeholder="AOV">
-  <button class="fetch-btn" onclick="fetchAds()">Fetch Ads</button>
+  <button onclick="fetchAds()">Fetch Ads</button>
 </div>
 
-<!-- TABLE -->
 <table>
 <thead>
 <tr>
@@ -94,15 +96,14 @@ th, td {
 async function fetchAds() {
   const act = document.getElementById("adAccount").value.trim();
   const token = document.getElementById("accessToken").value.trim();
-  const aov = document.getElementById("aov").value.trim();
 
-  if (!act || !token || !aov) {
-    alert("Please fill all fields");
+  if (!act || !token) {
+    alert("Please enter Ad Account and Token");
     return;
   }
 
   const res = await fetch(
-    `/api/ads?adAccount=${encodeURIComponent(act)}&token=${encodeURIComponent(token)}&aov=${encodeURIComponent(aov)}`
+    `/api/ads?adAccount=${encodeURIComponent(act)}&token=${encodeURIComponent(token)}`
   );
 
   const json = await res.json();
