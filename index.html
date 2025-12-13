@@ -14,7 +14,7 @@ body {
   text-align: center;
 }
 
-.container { max-width: 1100px; margin: auto; }
+.container { max-width: 1000px; margin: auto; }
 
 h1 { font-size: 32px; margin-bottom: 20px; }
 
@@ -28,7 +28,7 @@ h1 { font-size: 32px; margin-bottom: 20px; }
 
 .input-box input {
   padding: 10px;
-  width: 240px;
+  width: 260px;
   border: 1px solid #ccc;
   border-radius: 6px;
 }
@@ -51,20 +51,13 @@ table {
 }
 
 th, td {
-  padding: 12px;
+  padding: 14px;
   border-bottom: 1px solid #e5e7eb;
 }
 
 .win { color: #10b981; font-weight: bold; }
 .lose { color: #dc2626; font-weight: bold; }
 .nodata { color: #6b7280; font-weight: bold; }
-
-.ad-image {
-  width: 70px;
-  height: 70px;
-  object-fit: cover;
-  border-radius: 6px;
-}
 </style>
 </head>
 
@@ -78,7 +71,7 @@ th, td {
 <div class="input-box">
   <input id="adAccount" placeholder="act_123456789">
   <input id="accessToken" placeholder="Access Token">
-  <input id="aov" placeholder="AOV (Average Order Value)">
+  <input id="aov" placeholder="AOV">
   <button class="fetch-btn" onclick="fetchAds()">Fetch Ads</button>
 </div>
 
@@ -86,10 +79,8 @@ th, td {
 <table>
 <thead>
 <tr>
-  <th>Image</th>
   <th>Ad Name</th>
   <th>Spend</th>
-  <th>Purchases</th>
   <th>ROAS</th>
   <th>Status</th>
 </tr>
@@ -106,7 +97,7 @@ async function fetchAds() {
   const aov = document.getElementById("aov").value.trim();
 
   if (!act || !token || !aov) {
-    alert("Please enter Ad Account ID, Token, and AOV");
+    alert("Please fill all fields");
     return;
   }
 
@@ -123,25 +114,16 @@ function renderAds(ads) {
   table.innerHTML = "";
 
   ads.forEach(ad => {
-    let statusClass = "nodata";
-    let statusText = "🕒 NO DATA YET";
-
-    if (ad.status === "WIN") {
-      statusClass = "win";
-      statusText = "WIN";
-    } else if (ad.status === "LOSE") {
-      statusClass = "lose";
-      statusText = "LOSE";
-    }
+    let cls = "nodata";
+    if (ad.status === "WIN") cls = "win";
+    if (ad.status === "LOSE") cls = "lose";
 
     table.innerHTML += `
       <tr>
-        <td><img class="ad-image" src="${ad.image}"></td>
         <td>${ad.name}</td>
         <td>$${ad.spend}</td>
-        <td>${ad.purchases}</td>
         <td>${ad.roas}</td>
-        <td class="${statusClass}">${statusText}</td>
+        <td class="${cls}">${ad.status}</td>
       </tr>
     `;
   });
