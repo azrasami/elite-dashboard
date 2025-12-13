@@ -28,7 +28,7 @@ h1 { font-size: 32px; margin-bottom: 20px; }
 
 .input-box input {
   padding: 10px;
-  width: 260px;
+  width: 240px;
   border: 1px solid #ccc;
   border-radius: 6px;
 }
@@ -60,8 +60,8 @@ th, td {
 .nodata { color: #6b7280; font-weight: bold; }
 
 .ad-image {
-  width: 80px;
-  height: 80px;
+  width: 70px;
+  height: 70px;
   object-fit: cover;
   border-radius: 6px;
 }
@@ -74,20 +74,23 @@ th, td {
 
 <h1>ELITE ADS DASHBOARD</h1>
 
+<!-- INPUTS -->
 <div class="input-box">
   <input id="adAccount" placeholder="act_123456789">
   <input id="accessToken" placeholder="Access Token">
+  <input id="aov" placeholder="AOV (Average Order Value)">
   <button class="fetch-btn" onclick="fetchAds()">Fetch Ads</button>
 </div>
 
+<!-- TABLE -->
 <table>
 <thead>
 <tr>
   <th>Image</th>
   <th>Ad Name</th>
-  <th>CTR</th>
-  <th>CPC</th>
   <th>Spend</th>
+  <th>Purchases</th>
+  <th>ROAS</th>
   <th>Status</th>
 </tr>
 </thead>
@@ -100,16 +103,19 @@ th, td {
 async function fetchAds() {
   const act = document.getElementById("adAccount").value.trim();
   const token = document.getElementById("accessToken").value.trim();
+  const aov = document.getElementById("aov").value.trim();
 
-  if (!act || !token) {
-    alert("Please enter Ad Account ID and Token");
+  if (!act || !token || !aov) {
+    alert("Please enter Ad Account ID, Token, and AOV");
     return;
   }
 
-  const res = await fetch(`/api/ads?adAccount=${encodeURIComponent(act)}&token=${encodeURIComponent(token)}`);
-  const json = await res.json();
+  const res = await fetch(
+    `/api/ads?adAccount=${encodeURIComponent(act)}&token=${encodeURIComponent(token)}&aov=${encodeURIComponent(aov)}`
+  );
 
-  renderAds(json.data || []);
+  const json = await res.json();
+  renderAds(json.ads || []);
 }
 
 function renderAds(ads) {
@@ -117,31 +123,24 @@ function renderAds(ads) {
   table.innerHTML = "";
 
   ads.forEach(ad => {
-    const impressions = ad.impressions;
-    const clicks = ad.clicks;
-    const spend = ad.spend;
-
-    const ctr =
-      impressions > 0 ? ((clicks / impressions) * 100).toFixed(2) + "%" : "—";
-
-    const cpc =
-      clicks > 0 ? (spend / clicks).toFixed(2) : "—";
-
-    let statusText = "🕒 NO DATA YET";
     let statusClass = "nodata";
+    let statusText = "🕒 NO DATA YET";
 
-    if (spend > 0 && clicks > 0) {
-      statusText = "LOSE";
+    if (ad.status === "WIN") {
+      statusClass = "win";
+      statusText = "WIN";
+    } else if (ad.status === "LOSE") {
       statusClass = "lose";
+      statusText = "LOSE";
     }
 
     table.innerHTML += `
       <tr>
-        <td><img class="ad-image" src="${ad.imageUrl}"></td>
+        <td><img class="ad-image" src="${ad.image}"></td>
         <td>${ad.name}</td>
-        <td>${ctr}</td>
-        <td>${cpc}</td>
-        <td>$${spend.toFixed(2)}</td>
+        <td>$${ad.spend}</td>
+        <td>${ad.purchases}</td>
+        <td>${ad.roas}</td>
         <td class="${statusClass}">${statusText}</td>
       </tr>
     `;
