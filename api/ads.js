@@ -8,13 +8,6 @@ export default async function handler(req, res) {
   const target = Number(targetRoas ?? 2);
   const min = Number(minSpend ?? 3);
 
-  if (!Number.isFinite(target) || target <= 0) {
-    return res.status(400).json({ error: "Invalid targetRoas" });
-  }
-  if (!Number.isFinite(min) || min < 0) {
-    return res.status(400).json({ error: "Invalid minSpend" });
-  }
-
   function decide(spend, roas) {
     if (spend < min) {
       return {
@@ -45,22 +38,54 @@ export default async function handler(req, res) {
   try {
     const url =
       `https://graph.facebook.com/v19.0/${encodeURIComponent(adAccount)}/ads` +
-      `?fields=name,insights.date_preset(last_30d){spend,purchase_roas}` +
+      `?fields=name,effective_status,objective,insights.date_preset(last_30d){spend,purchase_roas}` +
       `&limit=200` +
       `&access_token=${encodeURIComponent(token)}`;
 
     const fbRes = await fetch(url);
     const data = await fbRes.json();
 
-    // خطأ توكن/صلاحيات/حساب
     if (!fbRes.ok || data.error) {
-      const message = data?.error?.message || "Meta API error";
-      return res.status(400).json({ error: message });
+      return res
+        .status(400)
+        .json({ error: data?.error?.message || "Meta API error" });
     }
 
-    const list = Array.isArray(data.data) ? data.data : [];
+    const ads = (data.data || []).map((ad) => {
+      // 1️⃣ الإعلان متوقف
+      if (ad.effective_status === "PAUSED") {
+        return {
+          name: ad.name || "(Unnamed ad)",
+          spend: 0,
+          roas: 0,
+          decision: "PAUSED",
+          reason: "Ad is currently paused. No decision needed.",
+        };
+      }
 
-    const ads = list.map((ad) => {
+      // 2️⃣ حملات ليست للبيع
+      const nonSalesObjectives = [
+        "ENGAGEMENT",
+        "POST_ENGAGEMENT",
+        "PAGE_LIKES",
+        "MESSAGES",
+        "TRAFFIC",
+        "VIDEO_VIEWS",
+        "REACH",
+        "AWARENESS",
+      ];
+
+      if (nonSalesObjectives.includes(ad.objective)) {
+        return {
+          name: ad.name || "(Unnamed ad)",
+          spend: 0,
+          roas: 0,
+          decision: "NOT_SALES",
+          reason: `Objective is ${ad.objective}. This ad is not meant for ROAS decisions.`,
+        };
+      }
+
+      // 3️⃣ إعلانات البيع
       const insights = ad.insights?.data?.[0] || {};
       const spend = Number(insights.spend || 0);
 
@@ -70,16 +95,12 @@ export default async function handler(req, res) {
         roas = Number(pr[0].value || 0);
       }
 
-      // لو spend = 0 → TOO_EARLY (حتى لو roas موجود/غير موجود)
-      const { decision, reason } = decide(
-        Number.isFinite(spend) ? spend : 0,
-        Number.isFinite(roas) ? roas : 0
-      );
+      const { decision, reason } = decide(spend, roas);
 
       return {
         name: ad.name || "(Unnamed ad)",
-        spend: spend,
-        roas: roas,
+        spend,
+        roas,
         decision,
         reason,
       };
