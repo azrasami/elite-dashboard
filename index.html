@@ -1,135 +1,218 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-<meta charset="UTF-8" />
-<title>Elite Ads Dashboard</title>
-<meta name="viewport" content="width=device-width, initial-scale=1" />
+  <head>
+    <meta charset="UTF-8" />
+    <title>Elite Ads Decision Tool</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-<style>
-body {
-  font-family: Arial, sans-serif;
-  background: #f7f7f7;
-  padding: 30px;
-  text-align: center;
-}
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background: #f7f7f7;
+        padding: 30px;
+      }
 
-.container {
-  max-width: 900px;
-  margin: auto;
-}
+      .container {
+        max-width: 1000px;
+        margin: auto;
+      }
 
-h1 {
-  font-size: 32px;
-  margin-bottom: 20px;
-}
+      h1 {
+        text-align: center;
+        margin-bottom: 10px;
+      }
 
-.input-box {
-  display: flex;
-  gap: 10px;
-  justify-content: center;
-  flex-wrap: wrap;
-  margin-bottom: 20px;
-}
+      .subtitle {
+        text-align: center;
+        color: #555;
+        margin-bottom: 30px;
+      }
 
-input {
-  padding: 10px;
-  width: 260px;
-  border-radius: 6px;
-  border: 1px solid #ccc;
-}
+      .input-box {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        justify-content: center;
+        margin-bottom: 25px;
+      }
 
-button {
-  padding: 10px 20px;
-  background: black;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-}
+      input {
+        padding: 10px;
+        width: 220px;
+        border-radius: 6px;
+        border: 1px solid #ccc;
+      }
 
-table {
-  width: 100%;
-  background: white;
-  border-radius: 10px;
-  border-collapse: collapse;
-  margin-top: 20px;
-}
+      button {
+        padding: 10px 20px;
+        background: black;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+      }
 
-th, td {
-  padding: 14px;
-  border-bottom: 1px solid #e5e7eb;
-}
+      .note {
+        text-align: center;
+        font-size: 13px;
+        color: #666;
+        margin-bottom: 20px;
+      }
 
-.win { color: #10b981; font-weight: bold; }
-.lose { color: #dc2626; font-weight: bold; }
-.nodata { color: #6b7280; font-weight: bold; }
-</style>
-</head>
+      table {
+        width: 100%;
+        background: white;
+        border-radius: 10px;
+        border-collapse: collapse;
+        overflow: hidden;
+      }
 
-<body>
+      th,
+      td {
+        padding: 14px;
+        border-bottom: 1px solid #e5e7eb;
+        text-align: left;
+        vertical-align: top;
+      }
 
-<div class="container">
+      th {
+        background: #f3f4f6;
+        font-size: 14px;
+      }
 
-<h1>ELITE ADS DASHBOARD</h1>
+      .win {
+        color: #16a34a;
+        font-weight: bold;
+      }
 
-<div class="input-box">
-  <input id="adAccount" placeholder="act_123456789">
-  <input id="accessToken" placeholder="Access Token">
-  <button onclick="fetchAds()">Fetch Ads</button>
-</div>
+      .lose {
+        color: #dc2626;
+        font-weight: bold;
+      }
 
-<table>
-<thead>
-<tr>
-  <th>Ad Name</th>
-  <th>Spend</th>
-  <th>ROAS</th>
-  <th>Status</th>
-</tr>
-</thead>
-<tbody id="adsTable"></tbody>
-</table>
+      .nodata {
+        color: #6b7280;
+        font-weight: bold;
+      }
 
-</div>
+      .decision {
+        font-size: 15px;
+      }
 
-<script>
-async function fetchAds() {
-  const act = document.getElementById("adAccount").value.trim();
-  const token = document.getElementById("accessToken").value.trim();
+      .reason {
+        font-size: 13px;
+        color: #444;
+      }
+    </style>
+  </head>
 
-  if (!act || !token) {
-    alert("Please enter Ad Account and Token");
-    return;
-  }
+  <body>
+    <div class="container">
+      <h1>Elite Ads Decision Tool</h1>
+      <div class="subtitle">
+        Decide which ads to stop, keep, or wait on — in seconds.
+      </div>
 
-  const res = await fetch(
-    `/api/ads?adAccount=${encodeURIComponent(act)}&token=${encodeURIComponent(token)}`
-  );
+      <div class="input-box">
+        <input id="adAccount" placeholder="Ad Account ID (act_...)" />
+        <input id="accessToken" placeholder="Read-only Meta Token" />
+        <input id="targetRoas" placeholder="Target ROAS" value="2" />
+        <input id="minSpend" placeholder="Min Spend ($)" value="3" />
+        <button onclick="fetchAds()">Get Decisions</button>
+      </div>
 
-  const json = await res.json();
-  renderAds(json.ads || []);
-}
+      <div class="note">
+        🔒 We only read ad performance. We cannot create, edit, or pause ads.
+      </div>
 
-function renderAds(ads) {
-  const table = document.getElementById("adsTable");
-  table.innerHTML = "";
+      <table>
+        <thead>
+          <tr>
+            <th>Decision</th>
+            <th>Ad Name</th>
+            <th>Spend</th>
+            <th>ROAS</th>
+            <th>Reason</th>
+          </tr>
+        </thead>
+        <tbody id="adsTable"></tbody>
+      </table>
+    </div>
 
-  ads.forEach(ad => {
-    let cls = "nodata";
-    if (ad.status === "WIN") cls = "win";
-    if (ad.status === "LOSE") cls = "lose";
+    <script>
+      async function fetchAds() {
+        const act = document.getElementById("adAccount").value.trim();
+        const token = document.getElementById("accessToken").value.trim();
+        const targetRoas = document.getElementById("targetRoas").value.trim();
+        const minSpend = document.getElementById("minSpend").value.trim();
 
-    table.innerHTML += `
-      <tr>
-        <td>${ad.name}</td>
-        <td>$${ad.spend}</td>
-        <td>${ad.roas}</td>
-        <td class="${cls}">${ad.status}</td>
-      </tr>
-    `;
-  });
-}
-</script>
+        if (!act || !token) {
+          alert("Please enter Ad Account ID and Token");
+          return;
+        }
 
-</body>
+        const url =
+          `/api/ads?adAccount=${encodeURIComponent(act)}` +
+          `&token=${encodeURIComponent(token)}` +
+          `&targetRoas=${encodeURIComponent(targetRoas || "2")}` +
+          `&minSpend=${encodeURIComponent(minSpend || "3")}`;
+
+        const res = await fetch(url);
+        const json = await res.json();
+
+        if (!res.ok) {
+          alert(json.error || "Error fetching ads");
+          renderAds([]);
+          return;
+        }
+
+        renderAds(json.ads || []);
+      }
+
+      function decisionClass(decision) {
+        if (decision === "KEEP") return "win";
+        if (decision === "STOP") return "lose";
+        return "nodata";
+      }
+
+      function renderAds(ads) {
+        const table = document.getElementById("adsTable");
+        table.innerHTML = "";
+
+        if (!ads.length) {
+          table.innerHTML =
+            `<tr><td class="nodata" colspan="5">No ads returned.</td></tr>`;
+          return;
+        }
+
+        // ترتيب: STOP أولًا، ثم TOO_EARLY، ثم KEEP
+        const order = { STOP: 1, TOO_EARLY: 2, KEEP: 3 };
+        ads.sort(
+          (a, b) => (order[a.decision] || 9) - (order[b.decision] || 9)
+        );
+
+        ads.forEach((ad) => {
+          const cls = decisionClass(ad.decision);
+          table.innerHTML += `
+            <tr>
+              <td class="decision ${cls}">${ad.decision}</td>
+              <td>${escapeHtml(ad.name)}</td>
+              <td>$${Number(ad.spend || 0).toFixed(2)}</td>
+              <td>${Number(ad.roas || 0).toFixed(2)}</td>
+              <td class="reason">${escapeHtml(ad.reason || "")}</td>
+            </tr>
+          `;
+        });
+      }
+
+      function escapeHtml(str) {
+        return String(str)
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#039;");
+      }
+    </script>
+  </body>
 </html>
